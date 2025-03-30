@@ -1,5 +1,5 @@
 {
-  "name": "db2graphql",
+  "name": "sql2graphql",
   "version": "0.13.3",
   "description": "Generate Graphql schema based on existing relational database",
   "main": "index.js",
@@ -10,8 +10,8 @@
     "prettier": "prettier --write ./src",
     "lint": "eslint ./src",
     "check": "npm run prettier && npm run lint && npm test",
-    "demo-pg": "psql -h localhost -U postgres -f ./demo/database.sql db2graphql",
-    "demo-mysql": "mysql --user=root --password db2graphql < ./demo_mysql/database.sql",
+    "demo-pg": "psql -h localhost -U postgres -f ./demo/database.sql sql2graphql",
+    "demo-mysql": "mysql --user=root --password sql2graphql < ./demo_mysql/database.sql",
     "demo-mssql": "sqlcmd -S localhost\\SQLEXPRESS -i ./demo_mssql/database.sql",
     "start": "nodemon demo",
     "start-mysql": "nodemon demo_mysql",
@@ -21,20 +21,7 @@
     "watch": "jest --maxWorkers=1 --watch --coverage",
     "travis_test": "jest --maxWorkers=1 --coverage --coverageReporters=text-lcov | coveralls"
   },
-  "keywords": [
-    "database",
-    "graphql",
-    "generate",
-    "api"
-  ],
-  "author": "Marco Afonso",
-  "contributors": [
-    {
-      "name": "Michael Di Prisco",
-      "email": "cadienvan@gmail.com",
-      "url": "https://github.com/Cadienvan"
-    }
-  ],
+
   "license": "MIT",
   "dependencies": {
     "lru-cache": "^6.0.0",
