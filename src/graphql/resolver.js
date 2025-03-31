@@ -33,14 +33,14 @@ class Resolver {
   }
 
   /**
-   * API: getPage
+   * API: GetPage
    * Convenient method to retrieve
    * a page of records
    *
    * @param {String} tablename
    * @param {Object} args
    */
-  async getPage(tablename, parent, args, context) {
+  async GetPage(tablename, parent, args, context) {
     args = this.parseArgsCommon(tablename, args);
     const total = await this.dbDriver.pageTotal(tablename, args);
     const items = await this.dbDriver.page(tablename, args);
@@ -48,14 +48,14 @@ class Resolver {
   }
 
   /**
-   * API: getFirstOf
+   * API: GetFirstOf
    * Convinient method to retrieve
    * only one record
    *
    * @param {String} tablename
    * @param {Object} args
    */
-  async getFirstOf(tablename, parent, args, context) {
+  async GetFirstOf(tablename, parent, args, context) {
     args = this.parseArgsCommon(tablename, args);
     let item = await this.dbDriver.firstOf(tablename, args);
     return item;
@@ -184,10 +184,10 @@ class Resolver {
    * @todo Refactor to smaller complexity
    * @param {String} tablename
    */
-  createForeignFieldsResolvers(tablename) {
-    const queryName = utils.toCamelCase(tablename);
-    const columns = this.dbDriver.getTableColumnsFromSchema(tablename);
-    columns.map((c) => {
+  async createForeignFieldsResolvers(tablename) {
+    const queryName = await utils.toCamelCase(tablename);
+    const columns = await this.dbDriver.getTableColumnsFromSchema(tablename);
+    await columns.map((c) => {
       const column = this.dbDriver.dbSchema[tablename][c];
       if (column.__foreign) {
         const field = c + '_' + column.__foreign.tablename;
@@ -201,7 +201,7 @@ class Resolver {
             fcolumnname +
             '#' +
             item[column.name];
-          return await this.getFirstOf(ftablename, item, args, context);
+          return await this.GetFirstOf(ftablename, item, args, context);
         };
       }
     });
@@ -213,9 +213,9 @@ class Resolver {
    * @todo Refactor to smaller complexity
    * @param {String} tablename
    */
-  createReverseRelationsResolvers(tablename) {
-    const queryName = utils.toCamelCase(tablename);
-    this.dbDriver.dbSchema[tablename].__reverse.map((r) => {
+  async createReverseRelationsResolvers(tablename) {
+    const queryName = await utils.toCamelCase(tablename);
+    await this.dbDriver.dbSchema[tablename].__reverse.map((r) => {
       let field = r.ftablename;
       const fcolumnname = r.fcolumnname;
       if (!this.resolvers[queryName]) this.resolvers[queryName] = {};
@@ -225,7 +225,7 @@ class Resolver {
           fcolumnname +
           '#' +
           item[r.columnname];
-        return await this.getPage(field, item, args, context);
+        return await this.GetPage(field, item, args, context);
       };
     });
   }
@@ -235,46 +235,61 @@ class Resolver {
    *
    * @param {String} tablename
    */
-  addDefaultFieldsResolvers(tablename) {
-    let typeName = utils.toCamelCase(tablename);
-    this.add('Query', 'getPage' + typeName, async (parent, args, context) => {
-      return this.getPage(tablename, parent, args, context);
+  async addDefaultFieldsResolvers(tablename) {
+    let typeName = await utils.toCamelCase(tablename);
+    this.add('Query', typeName + 'GetPage', async (parent, args, context) => {
+      return await this.GetPage(tablename, parent, args, context);
     });
-    this.add('Query', 'getFirst' + typeName, async (parent, args, context) => {
-      return this.getFirstOf(tablename, parent, args, context);
+    this.add('Query', typeName + 'GetFirst', async (parent, args, context) => {
+      return await this.GetFirstOf(tablename, parent, args, context);
     });
     this.add(
       'Mutation',
-      'putItem' + typeName,
+      typeName + 'Put',
       async (parent, args, context) => {
-        return this.putItem(tablename, parent, args, context);
+        return await this.putItem(tablename, parent, args, context);
       }
     );
   }
-
+  // async addDefaultFieldsResolvers(tablename) {
+  //   let typeName = await utils.toCamelCase(tablename);
+  //   this.add('Query', 'GetPage' + typeName, async (parent, args, context) => {
+  //     return await this.GetPage(tablename, parent, args, context);
+  //   });
+  //   this.add('Query', 'GetFirst' + typeName, async (parent, args, context) => {
+  //     return await this.GetFirstOf(tablename, parent, args, context);
+  //   });
+  //   this.add(
+  //     'Mutation',
+  //     'putItem' + typeName,
+  //     async (parent, args, context) => {
+  //       return await this.putItem(tablename, parent, args, context);
+  //     }
+  //   );
+  // }
   /**
    * Builds the Graphql resolvers object
    * by population with the current API methods
    *
    * @param {Boolean} withDatabase
    */
-  getResolvers(withDatabase = true) {
+  async getResolvers(withDatabase = true) {
     withDatabase = withDatabase && this.dbDriver;
 
     // Build resolvers
     if (withDatabase) {
-      let tables = this.dbDriver.getTablesFromSchema();
+      let tables = await this.dbDriver.getTablesFromSchema();
       for (let i = 0; i < tables.length; i++) {
         let tablename = tables[i];
 
         // Add default resolvers
-        this.addDefaultFieldsResolvers(tablename);
+        await this.addDefaultFieldsResolvers(tablename);
 
         // Add foreign fields resolvers
-        this.createForeignFieldsResolvers(tablename);
+        await this.createForeignFieldsResolvers(tablename);
 
         // Add inverse relations resolvers
-        this.createReverseRelationsResolvers(tablename);
+        await this.createReverseRelationsResolvers(tablename);
       }
     }
 

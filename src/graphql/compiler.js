@@ -7,7 +7,7 @@ const utils = require('../utils/utils');
  * from a database schema generated
  * by a database adapter
  */
-class Compiler {
+class Compiler  {
   /**
    * Creates a new compiler instance
    *
@@ -30,12 +30,16 @@ class Compiler {
    *
    * @param {Object} obj
    */
+  //  async function hhbuildParamsFromObject(obj, join = ', ') {
+  //   let params = [];
+  //    Object.keys(await obj).forEach((k) => params.push(k + ': ' + obj[k]));
+  //   return params.length ? '(' + params.join(join) + ')' : '';
+  // }
   buildParamsFromObject(obj, join = ', ') {
     let params = [];
-    Object.keys(obj).forEach((k) => params.push(k + ': ' + obj[k]));
+     Object.keys(obj).forEach((k) => params.push(k + ': ' + obj[k]));
     return params.length ? '(' + params.join(join) + ')' : '';
   }
-
   /**
    * Builds a gql string for query/mutation
    *
@@ -55,13 +59,11 @@ class Compiler {
    *
    * @param {String} tablename
    */
-  mapDbTableToGraphqlType(tablename) {
+   async mapDbTableToGraphqlType(tablename) {
     const field = utils.toCamelCase(tablename);
     if (!this.schema.type[field]) this.schema.type[field] = {};
-
-    // Add fields
-    let columns = this.dbDriver.getTableColumnsFromSchema(tablename);
-    columns.forEach((child) => {
+    let columns = await this.dbDriver.getTableColumnsFromSchema(tablename);
+    await columns.forEach((child) => {
       try {
         this.schema.type[field][child] = {
           name: child,
@@ -71,9 +73,8 @@ class Compiler {
           ),
           params: {}
         };
-      } catch (err) {}
+      } catch (err) {} 
     });
-
     // Add foreign relations
     columns.map((c) => {
       let column = this.dbSchema[tablename][c];
@@ -86,13 +87,13 @@ class Compiler {
         };
       }
     });
-
+    
     // Add reverse relation
     this.dbSchema[tablename].__reverse.map((r) => {
       let child = r.ftablename;
       this.schema.type[field][child] = {
         name: child,
-        type: 'Page' + utils.toCamelCase(child),
+        type: utils.toCamelCase(child) + 'Page',
         params: {
           filter: 'String',
           pagination: 'String',
@@ -102,9 +103,9 @@ class Compiler {
         }
       };
     });
-
+    
     // Add pages
-    this.schema.type['Page' + field] = {
+    this.schema.type[field + 'Page'] = {
       total: {
         name: 'total',
         type: 'Int',
@@ -118,13 +119,13 @@ class Compiler {
   }
 
   /**
-   * Create a convenient getPage field
+   * Create a convenient GetPage field
    * for paginated results
    *
    * @param {String} tablename
    */
-  mapDbTableToGraphqlQuery(tablename) {
-    const field = utils.toCamelCase(tablename);
+   async mapDbTableToGraphqlQuery(tablename) {
+    const field = await utils.toCamelCase(tablename);
     const params = {
       filter: 'String',
       pagination: 'String',
@@ -133,15 +134,15 @@ class Compiler {
       _cache: 'Boolean'
     };
     if (!this.schema.type.Query) this.schema.type['Query'] = {};
-    this.schema.type.Query['getPage' + field] = {
-      name: 'getPage' + field,
-      type: 'Page' + field,
+    this.schema.type.Query[field + 'GetPage'] = {
+      name: field + 'GetPage',
+      type: field + 'Page',
       params
     };
   }
-
+  
   /**
-   * Create a convenient getFirstOf field
+   * Create a convenient GetFirstOf field
    * to get only one record from database.
    *
    * Uses a simple filter that can be used
@@ -149,8 +150,8 @@ class Compiler {
    *
    * @param {String} tablename
    */
-  mapDbTableToGraphqlFirstOf(tablename) {
-    const field = utils.toCamelCase(tablename);
+   async mapDbTableToGraphqlFirstOf(tablename) {
+    const field = await utils.toCamelCase(tablename);
     const params = {
       filter: 'String',
       pagination: 'String',
@@ -159,8 +160,8 @@ class Compiler {
       _cache: 'Boolean'
     };
     if (!this.schema.type.Query) this.schema.type['Query'] = {};
-    this.schema.type.Query['getFirst' + field] = {
-      name: 'getFirst' + field,
+    this.schema.type.Query[field + 'GetFirst'] = {
+      name: field + 'GetFirst',
       type: field,
       params
     };
@@ -171,9 +172,9 @@ class Compiler {
    *
    * @param {String} tablename
    */
-  getInputName(tablename) {
-    const field = utils.toCamelCase(tablename);
-    const name = 'Input' + field;
+  async getInputName(tablename) {
+    const field = await utils.toCamelCase(tablename);
+    const name = field + 'Input';
     return name;
   }
 
@@ -182,11 +183,11 @@ class Compiler {
    *
    * @param {String} tablename
    */
-  mapDbTableToGraphqlInput(tablename) {
-    const name = this.getInputName(tablename);
+   async mapDbTableToGraphqlInput(tablename) {
+    const name = await this.getInputName(tablename);
     if (!this.schema.input[name]) this.schema.input[name] = {};
-    let columns = this.dbDriver.getTableColumnsFromSchema(tablename);
-    columns.forEach((col) => {
+    let columns = await this.dbDriver.getTableColumnsFromSchema(tablename);
+    await columns.forEach((col) => {
       try {
         this.schema.input[name][col] = this.dbDriver.mapDbColumnToGraphqlType(
           col,
@@ -202,13 +203,13 @@ class Compiler {
    *
    * @param {String} tablename
    */
-  mapDbTableToGraphqlMutation(tablename) {
-    const field = utils.toCamelCase(tablename);
+   async mapDbTableToGraphqlMutation(tablename) {
+    const field = await utils.toCamelCase(tablename);
     if (!this.schema.type.Mutation) this.schema.type['Mutation'] = {};
-    let name = this.getInputName(tablename);
+    let name = await this.getInputName(tablename);
     let params = { _debug: 'Boolean', input: name + '!' };
-    this.schema.type.Mutation['putItem' + field] = {
-      name: 'putItem' + field,
+    this.schema.type.Mutation[field + 'PutItem'] = {
+      name: field + 'PutItem',
       type: field,
       params
     };
@@ -244,7 +245,7 @@ class Compiler {
    * Generate a complete SDL schema as a string.
    * Can be used as standalone.
    */
-  buildSchema() {
+   buildSchema() {
     if (!this.dbSchema) return this.schema;
     for (let tablename in this.dbSchema) {
       this.mapDbTableToGraphqlType(tablename);
@@ -256,21 +257,44 @@ class Compiler {
     return this.schema;
   }
 
+  async async_buildSchema() {
+    if (!this.dbSchema) return this.schema;
+    for (let tablename in await this.dbSchema) {
+      await this.mapDbTableToGraphqlType(tablename);
+      await this.mapDbTableToGraphqlQuery(tablename);
+      await this.mapDbTableToGraphqlFirstOf(tablename);
+      await this.mapDbTableToGraphqlMutation(tablename);
+      await this.mapDbTableToGraphqlInput(tablename);
+    }
+    return this.schema;
+  }
+
+  async buildSchemaByTable(tablename) {
+    if (!this.dbSchema) return this.schema;
+    await this.mapDbTableToGraphqlType(tablename);
+    await this.mapDbTableToGraphqlQuery(tablename);
+    await this.mapDbTableToGraphqlFirstOf(tablename);
+    await this.mapDbTableToGraphqlMutation(tablename);
+    await this.mapDbTableToGraphqlInput(tablename);
+    return this.schema;
+  }
+
   /**
    * Generate a complete SDL schema as a string.
    * Can be used as standalone.
    */
-  getSDL(refresh = false) {
+  async getSDL(refresh = false) {
     if (!this.sdl || refresh) {
       this.sdl = '';
       let items = [];
-
+      
       // Build SDL types
       for (let field in this.schema.type) {
         let subfields = [];
-        Object.keys(this.schema.type[field]).map((key) => {
+        Object.keys(await this.schema.type[field]).map((key) => {
           let f = this.schema.type[field][key];
           let type = Array.isArray(f.type) ? '[' + f.type[0] + ']' : f.type;
+
           subfields.push(
             '  ' +
               f.name +
@@ -285,7 +309,7 @@ class Compiler {
       // Build SDL inputs
       for (let field in this.schema.input) {
         let subfields = [];
-        Object.keys(this.schema.input[field]).map((key) => {
+       Object.keys(await this.schema.input[field]).map((key) => {
           subfields.push('  ' + key + ': ' + this.schema.input[field][key]);
         });
         items.push('input ' + field + ' {\n' + subfields.join('\n') + '\n}');
@@ -294,15 +318,23 @@ class Compiler {
       this.sdl = items.join('\n\n');
 
       // Add condition type
-      if (items.length) {
-        this.sdl +=
-          '\n\ninput Condition {\n  sql: String!\n  val: [String!]!\n}';
-      }
+      // if (items.length) {
+      //   this.sdl +=
+      //     '\n\ninput Condition {\n  sql: String!\n  val: [String!]!\n}';
+      // }
 
       this.sdl += '\n';
     }
     return this.sdl.trim();
   }
-}
 
+
+
+
+
+}
+async function as_buildParamsFromObject(obj) {
+
+  return await this.buildParamsFromObject(obj || {});
+}
 module.exports = Compiler;

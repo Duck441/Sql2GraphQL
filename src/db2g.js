@@ -45,7 +45,7 @@ class DB2Graphql {
     this.resolver = new Resolver();
 
     // Add initial resolver
-    if (name) this.add('Query', 'getAPIName', 'String', () => name);
+    // if (name) this.add('Query', 'getAPIName', 'String', () => name);
   }
 
   /**
@@ -166,7 +166,7 @@ class DB2Graphql {
    *
    * @returns {Promise}                 The self instance for fluent interface
    */
-  async connect(namespace = 'public') {
+  async connect(namespace = 'public', ByTable = null,GetFkeyReverseCols = true) {
     if (!this.connection) throw new Error('Invalid Knex instance');
 
     const config = this.connection.connection().client.config;
@@ -175,12 +175,26 @@ class DB2Graphql {
       throw new Error('Database driver not available');
     }
 
-    this.dbDriver = new this.drivers[drivername](this.connection);
-    this.dbSchema = await this.dbDriver.getSchema(namespace, config.exclude);
-    this.compiler.dbSchema = this.dbSchema;
-    this.compiler.dbDriver = this.dbDriver;
-    this.resolver.dbDriver = this.dbDriver;
-    this.compiler.buildSchema();
+    
+    this.dbDriver = await new this.drivers[drivername](this.connection);
+    this.dbSchema = await this.dbDriver.getSchema(namespace,ByTable,GetFkeyReverseCols,config.exclude);
+    // console.log('dbSchema');
+    // console.log(this.dbSchema);
+    // process.exit();
+    this.compiler.dbSchema = await this.dbSchema;
+    this.compiler.dbDriver = await this.dbDriver;
+    this.resolver.dbDriver = await this.dbDriver;
+    // console.log('this.compiler.dbDriver');
+    // console.log(this.compiler.dbDriver);
+    // process.exit();
+    if (!ByTable) {
+      await this.compiler.async_buildSchema();  
+    } else {
+      await this.compiler.buildSchemaByTable(ByTable);  
+    };
+    
+
+    
   }
 
   /**
@@ -205,8 +219,9 @@ class DB2Graphql {
   /**
    * Get Graphql resolvers
    */
-  getResolvers() {
-    return this.resolver.getResolvers(!!this.connection);
+  async getResolvers() {
+    
+    return await this.resolver.getResolvers(!!this.connection);
   }
 
   /**
@@ -219,9 +234,9 @@ class DB2Graphql {
    *
    * @returns {String}        The Graphql schema as string
    */
-  getSchema(refresh = false) {
+  async getSchema(refresh = false) {
     if (!this.gqlSchema || refresh) {
-      this.gqlSchema = this.compiler.getSDL(refresh, !!this.connection);
+      this.gqlSchema = await this.compiler.getSDL(refresh, !!this.connection);
     }
     return this.gqlSchema;
   }

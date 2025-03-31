@@ -99,12 +99,14 @@ class MSSql {
         graphqlType = 'String';
         break;
       default:
-        throw new Error(
-          'Undefined column type: ' +
-            attrs.data_type +
-            ' of column ' +
-            columnname
-        );
+        graphqlType = 'String';
+        break;
+        // throw new Error(
+        //   ' ********** Undefined column type: ' +
+        //     attrs.data_type +
+        //     ' of column ' +
+        //     columnname + ' ********** '
+        // );
     }
     return graphqlType;
   }
@@ -302,10 +304,12 @@ class MSSql {
    * @param {Object} params
    */
   async query(sql, params) {
+
+
     let result = await this.db.raw(sql, params);
     return JSON.parse(JSON.stringify(result));
   }
-
+  
   /**
    * Generate cache key
    *
@@ -332,6 +336,7 @@ class MSSql {
     if (!exclude || exclude.length === 0) return sql;
     const placeholders = exclude.map((v) => '?').join(',');
     sql += `AND table_name NOT IN (${placeholders})`;
+
     return sql;
   }
 
@@ -341,9 +346,10 @@ class MSSql {
    * @param {String} schemaname
    * @param {Array} exclude
    */
-  async getTables(schemaname, exclude = []) {
+  async getTables(schemaname, exclude = [], ByTable = null) {
     const tables = [];
-
+    let rows = {};
+    let rows_L = '';
     // Build getTable SQL query
     let sql = `
       SELECT table_name as name 
@@ -351,15 +357,19 @@ class MSSql {
       WHERE table_schema = ?
       ${this.getExcludeCondition(exclude)}
     `;
-
     // Get table names
-    let rows = await this.query(sql, [schemaname, ...exclude]);
-    for (let i = 0; i < rows.length; i++) {
+    if (!ByTable) {
+      rows = await this.query(sql, [schemaname, ...exclude]) 
+      rows_L = rows.length;
+    } else {
+      rows[0] = { name: ByTable };
+      rows_L = 1;
+    };
+    for (let i = 0; i < rows_L; i++) {
       tables.push({ name: rows[i].name });
     }
     return tables;
   }
-
   /**
    * Get table columns
    * and create an object representation
@@ -482,50 +492,100 @@ class MSSql {
    * @param {String} schemaname
    * @param {Array} exclude
    */
-  async getSchema(schemaname, exclude = []) {
+  
+  async getSchema(schemaname, ByTable = null, GetFkeyReverseCols = true, exclude = []) {
     let dbSchema = {};
+    let gtables = {};
+    let tbls_L = '';
+
 
     // Get tables
-    let tables = await this.getTables(schemaname, exclude);
-    for (let i = 0; i < tables.length; i++) {
-      let tablename = tables[i].name;
-      let pk = await this.getPrimaryKey(schemaname, tablename);
-      dbSchema[tablename] = {
-        __pk: pk,
-        __reverse: []
-      };
+    if (!ByTable) {
+      gtables = await this.getTables(schemaname, exclude, ByTable = null);
+    } else {gtables = await this.getTables(schemaname, exclude, ByTable);};
+    let tables = gtables;
 
+    if (!ByTable) {
+      tbls_L = tables.length - 1;
+    } else {
+      tbls_L = tables.length - 1;
+    };
+    // console.log('ByTable');
+    // console.log(ByTable);
+    // console.log('');
+    // console.log('tbls_L');
+    // console.log(tbls_L);
+    for (let i = 0; i <= tbls_L; i++) {
+
+    
+
+    // console.log('tables[' + i + '][name]');
+    // console.log(tables[i]['name']);
+    // console.log('');
+      let tablename = tables[i]['name']
+
+      // process.exit();
+      let pk = await this.getPrimaryKey(schemaname, tablename);
+      if (GetFkeyReverseCols) {
+        dbSchema[tablename] = {
+          __pk: pk,
+          __reverse: []
+        };
+      } else {
+        dbSchema[tablename] = {
+          __pk: pk,
+          __reverse: []
+        };
+      };
+      
       // Get columns
       let columns = await this.getColumns(schemaname, tablename);
       for (let j = 0; j < columns.length; j++) {
+
         let columnname = columns[j].name;
         dbSchema[tablename][columnname] = columns[j];
       }
+    
     }
 
     // Get foreign keys
     for (let tablename in dbSchema) {
+
       const fkeys = await this.getForeignKeys(schemaname, tablename);
       for (let j = 0; j < fkeys.length; j++) {
         // Assign foreign key definition to column
+        dbSchema[tablename][fkeys[j].columnname] = {
+          __foreign: []
+        };
         dbSchema[tablename][fkeys[j].columnname]['__foreign'] = {
           schemaname: fkeys[j].ftableschema,
           tablename: fkeys[j].ftablename,
           columnname: fkeys[j].fcolumnname
         };
-
+        
         // Assign inverse relations to table
-        dbSchema[fkeys[j].ftablename]['__reverse'].push({
-          fschemaname: fkeys[j].schemaname,
-          ftablename: fkeys[j].tablename,
-          fcolumnname: fkeys[j].columnname,
-          columnname: fkeys[j].fcolumnname
-        });
+        if (GetFkeyReverseCols) {
+          dbSchema[fkeys[j].ftablename] = {
+            __reverse: []
+          };
+          dbSchema[fkeys[j].ftablename]['__reverse'].push({
+            fschemaname: fkeys[j].schemaname,
+            ftablename: fkeys[j].tablename,
+            fcolumnname: fkeys[j].columnname,
+            columnname: fkeys[j].fcolumnname
+          });
+        } else {
+          dbSchema[fkeys[j].ftablename] = {
+            __reverse: {}
+          };
+        };
       }
+
     }
 
-    // Return database schema
     this.dbSchema = dbSchema;
+    // console.log(this.dbSchema);
+    // process.exit();
     return this.dbSchema;
   }
 }
