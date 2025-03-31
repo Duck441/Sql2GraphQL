@@ -1,2 +1,2 @@
-var db2g = require('./src/db2g');
-module.exports = db2g;
+var Sql2Graph = require('./src/Sql2Graph');
+module.exports = Sql2Graph;

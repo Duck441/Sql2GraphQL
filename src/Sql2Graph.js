@@ -5,25 +5,25 @@ const Compiler = require('../src/graphql/compiler');
 const Resolver = require('../src/graphql/resolver');
 
 /**
- * Main facade interface for DB2Graphql.
+ * Main facade interface for Sql2Graph.
  *
  * <p>
- * DB2Graphql is a library to create a Graphql API
+ * Sql2Graph is a library to create a Graphql API
  * from a relational database schema.
  * </p>
  *
  */
-class DB2Graphql {
+class Sql2Graph {
   /**
-   * Creates a new DB2Graphql facade
+   * Creates a new Sql2Graph facade
    *
    * <br>
    * <br>Usage example:
    *
    * <pre>
    * import knex from 'knex'
-   * import DB2Graphql from 'db2graphql'
-   * const db2g = new DB2Graphql(knex())
+   * import Sql2Graph from 'Sql2Graph'
+   * const db2g = new Sql2Graph(knex())
    * </pre>
    *
    * @param {String} name
@@ -64,7 +64,7 @@ class DB2Graphql {
    * @param {Function} resolver     The resolver callback
    * @param {Object} [params={}]    The query arguments
    *
-   * @returns {DB2Graphql}        The self instance for fluent interface
+   * @returns {Sql2Graph}        The self instance for fluent interface
    */
   addField(path, returns, resolver, params = {}) {
     let segments = path
@@ -96,7 +96,7 @@ class DB2Graphql {
    * @param {Function} resolver     The resolver callback
    * @param {Object} [params={}]    The query arguments
    *
-   * @returns {DB2Graphql}        The self instance for fluent interface
+   * @returns {Sql2Graph}        The self instance for fluent interface
    */
   add(type, field, returns, resolver, params = {}) {
     this.compiler.addType(type, field, returns, params);
@@ -118,7 +118,7 @@ class DB2Graphql {
    * @param {String} path           The input type name and field name ie. InputUsers.username
    * @param {String|Array} subType  The Graphql returning type ie. Boolean or 'String'
    *
-   * @returns {DB2Graphql}        The self instance for fluent interface
+   * @returns {Sql2Graph}        The self instance for fluent interface
    */
   addInput(path, subType) {
     let segments = path
@@ -248,7 +248,7 @@ class DB2Graphql {
    *
    * @todo Move to its own repository as a plugin
    *
-   * @returns {DB2Graphql} The self instance for fluent interface
+   * @returns {Sql2Graph} The self instance for fluent interface
    */
   withBuilder() {
     let resolver;
@@ -366,4 +366,4 @@ class DB2Graphql {
 exports.PostgreSQL = PostgreSQL;
 exports.Compiler = Compiler;
 exports.Resolver = Resolver;
-module.exports = DB2Graphql;
+module.exports = Sql2Graph;
