@@ -1,32 +1,9 @@
-<p align="center">
-    <img width="400" height="88" src="/art/logo.png" alt="db2graphql logo" />
-</p>
-
-Logo by [@Caneco](https://twitter.com/Caneco)
-
-# db2graphql
+# Sql2GraphQL
 
 Generates a Graphql schema and resolvers from an existing relational database
 
-[![NPM Version Badge](https://img.shields.io/npm/v/db2graphql.svg)](https://www.npmjs.com/package/db2graphql)
-[![Build Status Badge](https://api.travis-ci.com/taviroquai/db2graphql.svg?branch=master)](https://app.travis-ci.com/github/taviroquai/db2graphql)
-[![Coverage Status Badge](https://coveralls.io/repos/github/taviroquai/db2graphql/badge.svg?branch=master)](https://coveralls.io/github/taviroquai/db2graphql?branch=master)
-![Dependencies Badge](https://img.shields.io/david/taviroquai/db2graphql.svg?style=flat)
-![Module Size Badge](https://img.shields.io/bundlephobia/min/db2graphql.svg?style=flat)
-![Last Commit Badge](https://img.shields.io/github/last-commit/taviroquai/db2graphql.svg?style=flat)
+## Query example
 
-## Features
-* Fully compatible with **express**, **koa**, **hapi** and **Apollo Server**
-* Converts an existing relational database (only PostgreSQL, MySQL and MSSql for now) schema to a JSON schema
-* Generates a Graphql SDL schema with convenient types, queries and mutations
-* Implements a generic Graphql resolver ready for API prototyping
-* Load related records based on foreign keys
-* Allows to add/override resolvers
-
-## Demo
-[![link to youtube video](demo/demo.png)](https://youtu.be/OpsLJvfqM6Q)
-
-### Query example
 ```gql
 query {
   getPageUsers(
@@ -55,16 +32,12 @@ query {
 ```
 
 ## Limitations/TODO
+
 * Only PostgreSQL, MySQLand MSSql supported
 * Better database types handling
 * Better database queries optimization
-* ~~Create tests~~
-* ~~Create an NPM module~~
 * Move to TypeScript
-* Add more and improve convenient API methods. Currently, only:
-    1. getPage
-    1. getFirst
-    1. putItem
+* Improve convenient API methods.
 
 ## Example
 
@@ -162,41 +135,57 @@ type Foo {
 ```
 
 ## Filter Examples
+
 Graphql
+
 ```gql
 { getPageFoo(filter: "field1[op1]value1;field2[op2]value2") }
 ```
+
 SQL
+
 ```sql
 WHERE foo.field1 [op1] value1 AND foo.field2 [op2] value2 
 ```
+
 Where [op] matches /\<\=\>|>=|<=|=|>|<|~|\#/  
 
 Graphql
+
 ```gql
 { getPageFoo(filter: "id#1,2,3") }
 ```
+
 SQL
+
 ```sql
 WHERE foo.name IN (1,2,3)
 ```
+
 Graphql
+
 ```gql
 { getPageFoo(filter: "name~my name is foo") }
 ```
+
 SQL
+
 ```sql
 WHERE foo.name ilike "my name is foo"
 ```
 
 ## Where Example
+
 Graphql
+
 ```gql
 query getPageFoo($where: Condition) {
   getPageFoo(where: $where): PageFoo
 }
 ```
+
 Variables
+
 ```json
 {
   "where": {
@@ -207,19 +196,25 @@ Variables
 ```
 
 ## Pagination Example
+
 Graphql
+
 ```gql
 query getPageFoo($pagination: String) {
   getPageFoo(pagination: $pagination): PageFoo
 } }
 ```
+
 Variables
+
 ```json
 {
   "pagination": "limit=10;offset=2;order by=title desc"
 }
 ```
+
 SQL
+
 ```sql
 ORDER BY title desc LIMIT 10 OFFSET 2
 ```
@@ -227,11 +222,12 @@ ORDER BY title desc LIMIT 10 OFFSET 2
 ## Usage
 
 ### Generate a Graphql schema from an existing relational database
+
 ```js
 const knex = require('knex');
-const db2g = require('db2graphql');
+const Sql2G = require('Sql2GraphQL');
 const conn = knex(require('./connection.json'));
-const api = new db2g('demo', conn);
+const api = new Sql2G('schema', conn);
 api.connect().then(() => {
   const schema = api.getSchema();
   console.log(schema);
@@ -240,6 +236,7 @@ api.connect().then(() => {
 ```
 
 ### Connect to Mysql database, please supply database name in connect method
+
 ```js
 api.connect('database_name').then(() => {
   const schema = api.getSchema();
@@ -248,33 +245,18 @@ api.connect('database_name').then(() => {
 });
 ```
 
-**Example of file connection.json**
-```json
-{
-  "client": "pg",
-  "version": "10.6",
-  "debug": false,
-  "connection": {
-    "host" : "127.0.0.1",
-    "user" : "postgres",
-    "password" : "postgres",
-    "database" : "db2graphql"
-  },
-  "exclude": []
-}
-```
+#### Complete example with Apollo Server
 
-### Complete example with Apollo Server
 ```js
 const knex = require('knex');
-const db2g = require('db2graphql');
+const Sql2G = require('Sql2GraphQL');
 const { ApolloServer } = require('@apollo/server');
 const { startStandaloneServer } = require('@apollo/server/standalone');
 
 const start = async (cb) => {
 
   /**************************************/
-  const api = new db2g('demo', knex(require('./connection.json')));
+  const api = new Sql2G('schema', knex(require('./connection.json')));
   await api.connect(); // Connects to database and extracts database schema
 
   // Set authorization hook example
@@ -315,9 +297,10 @@ start();
 ```
 
 ### Example without database connection
+
 ```js
-const db2g = require('db2graphql');
-const api = new db2g('demo');
+const Sql2G = require('Sql2GraphQL');
+const api = new Sql2G('demo');
 
 // Add a query and resolver
 api.addField('Query.getFoo', 'Boolean', async (root, args, context) => {
@@ -329,36 +312,6 @@ const schema = api.getSchema();
 const resolvers = api.getResolvers();
 ```
 
-## Run de demo
-```
-$ git clone https://github.com/taviroquai/db2graphql.git
-$ cd db2graphql
-$ npm install
-$ psql -h localhost -U postgres -c "CREATE DATABASE db2graphql"
-$ psql -h localhost -U postgres -f demo/database.sql db2graphql
-$ cp demo/connection.example.json demo/connection.json
-# Edit demo/connection.json
-$ npm run start
-```
-
-Open browser on http://localhost:4000 and see your Graphql API ready!
-
-## Credits
-
-- Created by [Marco Afonso](https://twitter.com/AfonsoD3v)
-- Logo by [Caneco](https://twitter.com/caneco)
-
-## Contributions
-
-Anyone is free to contribute!  
-If you need an easy-to-use environment, please run the following docker containers:
-```
-docker run --cap-add SYS_PTRACE -e 'ACCEPT_EULA=1' -e 'MSSQL_SA_PASSWORD=test' -p 1433:1433 --name azuresqledge -d mcr.microsoft.com/azure-sql-edge
-docker run --platform=linux/amd64 --name some-mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD= -d mysql:5.7
-docker run --name some-postgres -p 5432:5432 -e POSTGRES_PASSWORD= -d postgres:10.6
-```
-
-Please consider the azure-sql-edge container is because M1 Macs are not supported by the official mssql container.
-
 ## License
+
 MIT, what else?

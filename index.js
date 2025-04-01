@@ -1,2 +1,2 @@
-var Sql2Graph = require('./src/Sql2Graph');
-module.exports = Sql2Graph;
+var Sql2GraphQL = require('./src/Sql2GraphQL');
+module.exports = Sql2GraphQL;

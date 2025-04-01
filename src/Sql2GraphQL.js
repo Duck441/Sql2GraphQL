@@ -1,29 +1,29 @@
-const PostgreSQL = require('../src/adapters/postgres');
-const Mysql = require('../src/adapters/mysql');
-const MSSql = require('../src/adapters/mssql');
-const Compiler = require('../src/graphql/compiler');
-const Resolver = require('../src/graphql/resolver');
+const PostgreSQL = require('sql2graphql/src/adapters/postgres');
+const Mysql = require('sql2graphql/src/adapters/mysql');
+const MSSql = require('sql2graphql/src/adapters/mssql');
+const Compiler = require('sql2graphql/src/graphql/compiler');
+const Resolver = require('sql2graphql/src/graphql/resolver');
 
 /**
- * Main facade interface for Sql2Graph.
+ * Main facade interface for Sql2GraphQL.
  *
  * <p>
- * Sql2Graph is a library to create a Graphql API
+ * Sql2GraphQL is a library to create a Graphql API
  * from a relational database schema.
  * </p>
  *
  */
-class Sql2Graph {
+class Sql2GraphQL {
   /**
-   * Creates a new Sql2Graph facade
+   * Creates a new Sql2GraphQL facade
    *
    * <br>
    * <br>Usage example:
    *
    * <pre>
    * import knex from 'knex'
-   * import Sql2Graph from 'Sql2Graph'
-   * const db2g = new Sql2Graph(knex())
+   * import Sql2GraphQL from 'Sql2GraphQL'
+   * const db2g = new Sql2GraphQL(knex())
    * </pre>
    *
    * @param {String} name
@@ -64,7 +64,7 @@ class Sql2Graph {
    * @param {Function} resolver     The resolver callback
    * @param {Object} [params={}]    The query arguments
    *
-   * @returns {Sql2Graph}        The self instance for fluent interface
+   * @returns {Sql2GraphQL}        The self instance for fluent interface
    */
   addField(path, returns, resolver, params = {}) {
     let segments = path
@@ -96,7 +96,7 @@ class Sql2Graph {
    * @param {Function} resolver     The resolver callback
    * @param {Object} [params={}]    The query arguments
    *
-   * @returns {Sql2Graph}        The self instance for fluent interface
+   * @returns {Sql2GraphQL}        The self instance for fluent interface
    */
   add(type, field, returns, resolver, params = {}) {
     this.compiler.addType(type, field, returns, params);
@@ -118,7 +118,7 @@ class Sql2Graph {
    * @param {String} path           The input type name and field name ie. InputUsers.username
    * @param {String|Array} subType  The Graphql returning type ie. Boolean or 'String'
    *
-   * @returns {Sql2Graph}        The self instance for fluent interface
+   * @returns {Sql2GraphQL}        The self instance for fluent interface
    */
   addInput(path, subType) {
     let segments = path
@@ -248,7 +248,7 @@ class Sql2Graph {
    *
    * @todo Move to its own repository as a plugin
    *
-   * @returns {Sql2Graph} The self instance for fluent interface
+   * @returns {Sql2GraphQL} The self instance for fluent interface
    */
   withBuilder() {
     let resolver;
@@ -366,4 +366,4 @@ class Sql2Graph {
 exports.PostgreSQL = PostgreSQL;
 exports.Compiler = Compiler;
 exports.Resolver = Resolver;
-module.exports = Sql2Graph;
+module.exports = Sql2GraphQL;
